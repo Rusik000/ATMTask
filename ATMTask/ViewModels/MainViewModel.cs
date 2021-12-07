@@ -7,18 +7,25 @@ using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Windows;
+using System.Windows.Threading;
 
 namespace ATMTask.ViewModels
 {
     public class MainViewModel : BaseViewModel
     {
+        int c = 0;
+
+        DispatcherTimer dispatcher = new DispatcherTimer();
         public MainWindow MainView { get; set; }
         public RelayCommand LoadDataCommand { get; set; }
 
+        public Person Person { get; set; }
         public RelayCommand InsertCardCommand { get; set; }
 
         public RelayCommand TransferMoneyCommand { get; set; }
 
+        public static object obj = new object();
 
         private ObservableCollection<Person> _people;
 
@@ -47,11 +54,33 @@ namespace ATMTask.ViewModels
             }
         }
 
-        public static object obj = new object();
 
 
+        private void Dispatcher_Tick(object sender, EventArgs e)
+        {
+            try
+            {
+                if (double.Parse(MainView.BalanceTxtBlck.Text) >= 0)
+                {
+
+                    MainView.AddingTxtBx.Text = (c += 10).ToString();
+
+
+                }
+                else
+                {
+                    dispatcher.Stop();
+                }
+
+            }
+            catch (Exception)
+            {
+            }
+        }
         public MainViewModel()
         {
+            dispatcher.Interval = TimeSpan.FromSeconds(2);
+            dispatcher.Tick += Dispatcher_Tick;
             People = new ObservableCollection<Person>()
             {
                 new Person()
@@ -102,20 +131,23 @@ namespace ATMTask.ViewModels
                 MainView.InsertTxtBx.Visibility = System.Windows.Visibility.Visible;
             });
 
+
             TransferMoneyCommand = new RelayCommand((sender) =>
             {
-                MainView.Dispatcher.BeginInvoke( new ThreadStart(() => MainView.DataContext = MainView));
-
-                for (int i = 0; i < 10; i++)
+                lock (obj)
                 {
-                    ThreadStart start = new ThreadStart(Transfer);
-                    new Thread(start).Start();
+                    dispatcher.Start();
+                    if (double.Parse(MainView.BalanceTxtBlck.Text) >= double.Parse(MainView.IncludingTextBx.Text))
+                    {
+                        Thread.Sleep(2000);
+                        MainView.BalanceTxtBlck.Text = (double.Parse(MainView.BalanceTxtBlck.Text) - double.Parse(MainView.IncludingTextBx.Text)).ToString();
+                    }
+                    else
+                    {
+                        MessageBox.Show("Transfer Declined");
+                    }
                 }
             });
-
-
-
-
 
 
 
